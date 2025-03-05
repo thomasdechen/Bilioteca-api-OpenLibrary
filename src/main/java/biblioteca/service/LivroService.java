@@ -1,0 +1,62 @@
+package biblioteca.service;
+
+import biblioteca.model.Livro;
+import biblioteca.repository.LivroRepository;
+
+import java.util.List;
+
+public class LivroService {
+    private LivroRepository repository;
+
+    public LivroService() {
+        this.repository = new LivroRepository();
+    }
+
+    public void salvarLivro(Livro livro) {
+        // Remover espaços em branco e converter string vazia para null do ISBN
+        String isbn = livro.getIsbn() != null ? livro.getIsbn().trim() : null;
+        livro.setIsbn(isbn);
+
+        if (isbn != null && !isbn.isEmpty()) {
+            // Verificar se já existe um livro com este ISBN
+            List<Livro> livrosExistentes = repository.buscarPorCampo("isbn", isbn);
+
+            if (!livrosExistentes.isEmpty()) {
+                if (livro.getId() == null || !livro.getId().equals(livrosExistentes.get(0).getId())) {
+                    throw new RuntimeException("ISBN já existe para outro livro");
+                }
+            }
+        }
+
+        if (livro.getTitulo() == null || livro.getTitulo().trim().isEmpty()) {
+            throw new IllegalArgumentException("Título do livro é obrigatório");
+        }
+
+        if (livro.getAutores() == null || livro.getAutores().trim().isEmpty()) {
+            throw new IllegalArgumentException("Autores do livro são obrigatórios");
+        }
+
+        repository.salvar(livro);
+    }
+
+    public Livro buscarPorId(Long id) {
+        return repository.buscarPorId(id);
+    }
+
+    public Livro buscarPorIsbn(String isbn) {
+        return repository.buscarPorIsbn(isbn);
+    }
+
+    public List<Livro> buscarPorCampo(String campo, String valor) {
+        return repository.buscarPorCampo(campo, valor);
+    }
+
+    public List<Livro> listarTodos() {
+        return repository.listarTodos();
+    }
+
+    public void excluir(Long id) {
+        repository.excluir(id);
+    }
+
+}

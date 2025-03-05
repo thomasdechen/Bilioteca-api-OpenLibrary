@@ -13,17 +13,17 @@ public class LivroService {
     }
 
     public void salvarLivro(Livro livro) {
-        // Remover espaços em branco e converter string vazia para null do ISBN
+        // Normalizar ISBN: remover espaços em branco e converter string vazia para null
         String isbn = livro.getIsbn() != null ? livro.getIsbn().trim() : null;
         livro.setIsbn(isbn);
 
         if (isbn != null && !isbn.isEmpty()) {
-            // Verificar se já existe um livro com este ISBN
-            List<Livro> livrosExistentes = repository.buscarPorCampo("isbn", isbn);
+            // Verificar se já existe um livro com este ISBN ou ISBN semelhante
+            Livro livroExistente = repository.buscarPorIsbn(isbn);
 
-            if (!livrosExistentes.isEmpty()) {
-                if (livro.getId() == null || !livro.getId().equals(livrosExistentes.get(0).getId())) {
-                    throw new RuntimeException("ISBN já existe para outro livro");
+            if (livroExistente != null) {
+                if (livro.getId() == null || !livro.getId().equals(livroExistente.getId())) {
+                    throw new RuntimeException("Livro com este ISBN já existe: " + isbn);
                 }
             }
         }

@@ -42,15 +42,18 @@ public class LivroRepository {
         }
     }
 
+
     public Livro buscarPorIsbn(String isbn) {
         EntityManager em = emf.createEntityManager();
         try {
-            return em.createQuery("SELECT l FROM Livro l WHERE l.isbn = :isbn", Livro.class)
+            // Query to check for exact match or if ISBN is in livros_semelhantes
+            String jpql = "SELECT l FROM Livro l WHERE l.isbn = :isbn OR :isbn MEMBER OF l.livrosSemelhantes";
+
+            List<Livro> resultados = em.createQuery(jpql, Livro.class)
                     .setParameter("isbn", isbn)
-                    .getResultList()
-                    .stream()
-                    .findFirst()
-                    .orElse(null);
+                    .getResultList();
+
+            return resultados.isEmpty() ? null : resultados.get(0);
         } catch (Exception e) {
             e.printStackTrace();
             return null;

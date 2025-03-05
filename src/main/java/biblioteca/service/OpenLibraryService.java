@@ -5,14 +5,17 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class OpenLibraryService {
     private static final String BASE_URL = "https://openlibrary.org/api/books?bibkeys=ISBN:";
@@ -20,18 +23,19 @@ public class OpenLibraryService {
     private static final DateTimeFormatter YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
     private static final DateTimeFormatter FULL_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public static JsonObject buscarInformacoesPorIsbn(String isbn) throws IOException {
-        OkHttpClient client = new OkHttpClient();
-        Request request = new Request.Builder()
-                .url(BASE_URL + isbn + "&format=json&jscmd=data")
-                .build();
+    public static JsonObject buscarInformacoesPorIsbn(String isbn) {
+        Client client = ClientBuilder.newClient();
 
-        try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                throw new IOException("Resposta não esperada: " + response);
+        try {
+            Response response = client.target(BASE_URL + isbn + "&format=json&jscmd=data")
+                    .request(MediaType.APPLICATION_JSON)
+                    .get();
+
+            if (response.getStatus() != 200) {
+                throw new IOException("Resposta não esperada: " + response.getStatus());
             }
 
-            String jsonData = response.body().string();
+            String jsonData = response.readEntity(String.class);
             JsonObject parsedResponse = JsonParser.parseString(jsonData).getAsJsonObject();
 
             String isbnKey = "ISBN:" + isbn;
@@ -40,6 +44,10 @@ public class OpenLibraryService {
             }
 
             return parsedResponse.getAsJsonObject(isbnKey);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao buscar informações do livro", e);
+        } finally {
+            client.close();
         }
     }
 
@@ -85,7 +93,76 @@ public class OpenLibraryService {
             }
         }
 
+        // Extrair o work ID
+        if (dadosLivro.has("works") && dadosLivro.get("works").isJsonArray()) {
+            JsonArray works = dadosLivro.getAsJsonArray("works");
+            if (!works.isEmpty()) {
+                JsonObject work = works.get(0).getAsJsonObject();
+                if (work.has("key")) {
+                    String workId = work.get("key").getAsString().replace("/works/", "");
+
+                    // Buscar número de edições
+                    int edicoes = buscarNumeroEdicoes(workId);
+                    livro.setLivrosSemelhantes(edicoes);
+                }
+            }
+        }
+
         return livro;
+    }
+
+    private static List<String> extrairTodosIsbn(JsonObject dadosLivro) {
+        List<String> todosIsbn = new ArrayList<>();
+
+        if (dadosLivro.has("isbn_10")) {
+            JsonArray isbn10 = dadosLivro.getAsJsonArray("isbn_10");
+            for (JsonElement isbn : isbn10) {
+                todosIsbn.add(isbn.getAsString());
+            }
+        }
+
+        if (dadosLivro.has("isbn_13")) {
+            JsonArray isbn13 = dadosLivro.getAsJsonArray("isbn_13");
+            for (JsonElement isbn : isbn13) {
+                todosIsbn.add(isbn.getAsString());
+            }
+        }
+
+        return todosIsbn;
+    }
+
+    private static int buscarNumeroEdicoes(String workId) {
+        Client client = ClientBuilder.newClient();
+
+        try {
+            Response response = client.target("https://openlibrary.org/works/" + workId + "/editions.json")
+                    .request(MediaType.APPLICATION_JSON)
+                    .get();
+
+            if (response.getStatus() != 200) {
+                return 0;
+            }
+
+            String jsonData = response.readEntity(String.class);
+            JsonObject parsedResponse = JsonParser.parseString(jsonData).getAsJsonObject();
+
+            System.out.println("Resposta da API: " + parsedResponse);
+
+            if (parsedResponse.has("size")) {
+                JsonElement sizeElement = parsedResponse.get("size");
+
+                if (sizeElement.isJsonPrimitive()) {
+                    return sizeElement.getAsInt();
+                }
+            }
+
+            return 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        } finally {
+            client.close();
+        }
     }
 
     private static LocalDate parseData(String dataString) {

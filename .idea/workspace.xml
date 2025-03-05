@@ -4,7 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4254a6d7-a86c-4a65-8f1a-33129caacba1" name="Changes" comment="Funções: CRUD de livros, cadastro por ISBN(Falta correções no cadastro de livros duplicados) e barra de busca" />
+    <list default="true" id="4254a6d7-a86c-4a65-8f1a-33129caacba1" name="Changes" comment="Funções: CRUD de livros, cadastro por ISBN(Falta correções no cadastro de livros duplicados) e barra de busca">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/biblioteca/model/Livro.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/biblioteca/model/Livro.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/biblioteca/repository/LivroRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/biblioteca/repository/LivroRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/biblioteca/repository/LivroRepositoryTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/biblioteca/repository/LivroRepositoryTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/biblioteca/service/LivroService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/biblioteca/service/LivroService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/biblioteca/service/OpenLibraryService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/biblioteca/service/OpenLibraryService.java" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />

@@ -148,14 +148,9 @@ public class BibliotecaApp extends JFrame {
             carregarLivros();
             JOptionPane.showMessageDialog(this, "Livro cadastrado com sucesso!");
             campoIsbn.setText(""); // Limpar o campo após o cadastro
-        } catch (IOException e) {
+        } catch (RuntimeException e) {
             JOptionPane.showMessageDialog(this,
                     "Erro ao buscar informações do livro: " + e.getMessage(),
-                    "Erro",
-                    JOptionPane.ERROR_MESSAGE);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this,
-                    "Erro inesperado ao cadastrar livro: " + e.getMessage(),
                     "Erro",
                     JOptionPane.ERROR_MESSAGE);
         }

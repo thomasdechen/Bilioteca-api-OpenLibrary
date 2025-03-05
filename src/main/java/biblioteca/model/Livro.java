@@ -27,25 +27,28 @@ public class Livro {
     @Column
     private String editora;
 
-    @ElementCollection
-    @CollectionTable(name = "livros_semelhantes", joinColumns = @JoinColumn(name = "livro_id"))
-    @Column(name = "livro_semelhante")
-    private List<String> livrosSemelhantes;
+    @Column(name = "livros_semelhantes")
+    private Integer livrosSemelhantes;
 
-    // Construtores
     public Livro() {}
 
     public Livro(String titulo, String autores, LocalDate dataPublicacao,
-                 String isbn, String editora, List<String> livrosSemelhantes) {
+                 String isbn, String editora) {
         this.titulo = titulo;
         this.autores = autores;
         this.dataPublicacao = dataPublicacao;
         this.isbn = isbn;
         this.editora = editora;
+    }
+
+    public Integer getLivrosSemelhantes() {
+        return livrosSemelhantes;
+    }
+
+    public void setLivrosSemelhantes(Integer livrosSemelhantes) {
         this.livrosSemelhantes = livrosSemelhantes;
     }
 
-    // Getters e Setters
     public Long getId() {
         return id;
     }
@@ -92,14 +95,6 @@ public class Livro {
 
     public void setEditora(String editora) {
         this.editora = editora;
-    }
-
-    public List<String> getLivrosSemelhantes() {
-        return livrosSemelhantes;
-    }
-
-    public void setLivrosSemelhantes(List<String> livrosSemelhantes) {
-        this.livrosSemelhantes = livrosSemelhantes;
     }
 
     @Override

@@ -3,7 +3,9 @@ package biblioteca.service;
 import biblioteca.model.Livro;
 import biblioteca.repository.LivroRepository;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class LivroService {
     private LivroRepository repository;
@@ -48,15 +50,22 @@ public class LivroService {
     }
 
     public List<Livro> buscarPorCampo(String campo, String valor) {
-        return repository.buscarPorCampo(campo, valor);
+        // Busca pelos critérios no repositório e depois ordena por ID
+        List<Livro> livros = repository.buscarPorCampo(campo, valor);
+        return livros.stream()
+                .sorted(Comparator.comparing(Livro::getId))
+                .collect(Collectors.toList());
     }
 
     public List<Livro> listarTodos() {
-        return repository.listarTodos();
+        // Obtém todos os livros e garante que estejam ordenados por ID
+        List<Livro> livros = repository.listarTodos();
+        return livros.stream()
+                .sorted(Comparator.comparing(Livro::getId))
+                .collect(Collectors.toList());
     }
 
     public void excluir(Long id) {
         repository.excluir(id);
     }
-
 }

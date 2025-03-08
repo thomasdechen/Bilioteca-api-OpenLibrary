@@ -10,6 +10,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 
 public class BibliotecaApp extends JFrame {
@@ -36,10 +37,14 @@ public class BibliotecaApp extends JFrame {
         campoPesquisa = new JTextField(20);
         JButton botaoBuscar = new JButton("Buscar");
         botaoBuscar.addActionListener(e -> buscarLivros());
+        JButton botaoMostrarTodos = new JButton("Mostrar Todos");
+        botaoMostrarTodos.addActionListener(e -> carregarLivros());
 
+        painelBusca.add(new JLabel("Buscar por:"));
         painelBusca.add(campoBusca);
         painelBusca.add(campoPesquisa);
         painelBusca.add(botaoBuscar);
+        painelBusca.add(botaoMostrarTodos);
 
         // Painel de Cadastro ISBN
         JPanel painelCadastro = new JPanel();
@@ -56,15 +61,20 @@ public class BibliotecaApp extends JFrame {
         JButton botaoExcluir = new JButton("Excluir");
         botaoExcluir.addActionListener(e -> excluirLivroSelecionado());
 
+        // Novo botão de importação
+        JButton botaoImportar = new JButton("Importar CSV");
+        botaoImportar.addActionListener(e -> abrirTelaImportacao());
+
         painelCadastro.add(new JLabel("ISBN:"));
         painelCadastro.add(campoIsbn);
         painelCadastro.add(botaoCadastrarIsbn);
         painelCadastro.add(botaoIncluir);
         painelCadastro.add(botaoEditar);
         painelCadastro.add(botaoExcluir);
+        painelCadastro.add(botaoImportar); // Adiciona o botão de importação
 
         // Tabela de Livros
-        String[] colunas = {"ID", "Título", "Autor", "ISBN", "Editora", "Data Publicação"};
+        String[] colunas = {"ID", "Título", "Autor", "ISBN", "Editora", "Data Publicação", "Livros Semelhantes"};
         modeloTabela = new DefaultTableModel(colunas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -79,9 +89,16 @@ public class BibliotecaApp extends JFrame {
         add(painelCadastro, BorderLayout.SOUTH);
     }
 
+    private void abrirTelaImportacao() {
+        Importacao telaImportacao = new Importacao(this);
+        telaImportacao.setVisible(true);
+    }
+
     private void carregarLivros() {
         modeloTabela.setRowCount(0);
         List<Livro> livros = repository.listarTodos();
+
+        livros.sort(Comparator.comparing(Livro::getId));
 
         for (Livro livro : livros) {
             modeloTabela.addRow(new Object[]{
@@ -91,7 +108,8 @@ public class BibliotecaApp extends JFrame {
                     livro.getIsbn(),
                     livro.getEditora(),
                     livro.getDataPublicacao() != null ?
-                            FormatacaoDatas.formatarParaExibicao(livro.getDataPublicacao()) : ""
+                            FormatacaoDatas.formatarParaExibicao(livro.getDataPublicacao()) : "",
+                    livro.getLivrosSemelhantes()
             });
         }
     }
@@ -107,7 +125,8 @@ public class BibliotecaApp extends JFrame {
 
         String campoRepositorio = campo.equals("Título") ? "titulo" :
                 campo.equals("Autor") ? "autores" :
-                        "isbn";
+                        campo.equals("Editora") ? "editora" :
+                                "isbn";
 
         List<Livro> livros = repository.buscarPorCampo(campoRepositorio, valor);
 
@@ -130,7 +149,9 @@ public class BibliotecaApp extends JFrame {
                     livro.getAutores(),
                     livro.getIsbn(),
                     livro.getEditora(),
-                    livro.getDataPublicacao()
+                    livro.getDataPublicacao() != null ?
+                            FormatacaoDatas.formatarParaExibicao(livro.getDataPublicacao()) : "",
+                    livro.getLivrosSemelhantes()
             });
         }
     }
@@ -148,7 +169,7 @@ public class BibliotecaApp extends JFrame {
             repository.salvar(livro);
             carregarLivros();
             JOptionPane.showMessageDialog(this, "Livro cadastrado com sucesso!");
-            campoIsbn.setText(""); // Limpar o campo após o cadastro
+            campoIsbn.setText("");
         } catch (RuntimeException e) {
             JOptionPane.showMessageDialog(this,
                     "Erro ao buscar informações do livro: " + e.getMessage(),

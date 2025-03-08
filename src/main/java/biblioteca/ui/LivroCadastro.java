@@ -82,8 +82,24 @@ public class LivroCadastro extends JFrame {
             campoTitulo.setText(livroEncontrado.getTitulo());
             campoAutores.setText(livroEncontrado.getAutores());
             campoEditora.setText(livroEncontrado.getEditora());
+
+            if (livroEncontrado.getDataPublicacao() != null) {
+                campoDataPublicacao.setText(
+                        FormatacaoDatas.formatarParaExibicao(livroEncontrado.getDataPublicacao())
+                );
+            }
+
+            livro.setLivrosSemelhantes(livroEncontrado.getLivrosSemelhantes());
+
+            JOptionPane.showMessageDialog(this,
+                    "Informações do livro obtidas com sucesso!\n" +
+                            "Título: " + livroEncontrado.getTitulo() + "\n",
+                    "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Erro ao buscar livro: " + e.getMessage());
+            JOptionPane.showMessageDialog(this,
+                    "Erro ao buscar livro: " + e.getMessage(),
+                    "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
 

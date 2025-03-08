@@ -4,7 +4,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
-public class TesteConexao {
+public class TesteConexaoBancoPostgreSQL {
     public static void main(String[] args) {
         try {
             EntityManagerFactory emf = Persistence.createEntityManagerFactory("BibliotecaPU");

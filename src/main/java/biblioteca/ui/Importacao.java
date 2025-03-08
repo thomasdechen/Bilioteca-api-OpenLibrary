@@ -9,6 +9,8 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Interface gráfica para importação de arquivos CSV
@@ -18,7 +20,10 @@ public class Importacao extends JFrame {
     private ImportacaoService importacaoService;
     private JTextArea logArea;
     private JButton botaoSelecionar;
+    private JButton botaoImportar;
     private JTextField campoArquivo;
+    private JProgressBar barraProgresso;
+    private JCheckBox checkboxLogDetalhado;
 
     public Importacao(BibliotecaApp framePai) {
         this.framePai = framePai;
@@ -28,7 +33,7 @@ public class Importacao extends JFrame {
 
     private void initComponents() {
         setTitle("Importação de Livros");
-        setSize(600, 400);
+        setSize(700, 500);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
 
@@ -47,46 +52,86 @@ public class Importacao extends JFrame {
         painelSelecao.add(campoArquivo, BorderLayout.CENTER);
         painelSelecao.add(botaoSelecionar, BorderLayout.EAST);
 
+        // Painel Central - Log e Opções
+        JPanel painelCentral = new JPanel(new BorderLayout(10, 10));
+        painelCentral.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
+
         // Área de Log
         logArea = new JTextArea();
         logArea.setEditable(false);
         logArea.setLineWrap(true);
         logArea.setWrapStyleWord(true);
         logArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-        logArea.append("Instruções para importação de CSV:\n");
-        logArea.append("1. O arquivo CSV deve ter cabeçalho com os nomes das colunas.\n");
-        logArea.append("2. Colunas obrigatórias: 'titulo' e 'autores'.\n");
-        logArea.append("3. Colunas opcionais: 'isbn', 'editora', 'data_publicacao'.\n");
-        logArea.append("4. Se o ISBN já existir, o livro será atualizado.\n");
-        logArea.append("5. Selecione um arquivo CSV e clique em 'Importar'.\n\n");
-        logArea.append("Exemplo de arquivo CSV:\n");
-        logArea.append("titulo,autores,isbn,editora,data_publicacao\n\n");
-        logArea.append("\"Vetores e Geometria Analitica\",\"Paulo Winterle\",\"9788574801711\",\"Pearson\",\"2009-03-01\"\n");
-        logArea.append("\"O Cortiço\",\"Aluísio Azevedo\",\"9788506055342\",\"Ática\",\"1890-01-01\"\n\n");
+        adicionarInstrucoesLog();
 
         JScrollPane scrollPane = new JScrollPane(logArea);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
+
+        // Painel de Opções
+        JPanel painelOpcoes = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        checkboxLogDetalhado = new JCheckBox("Log detalhado", true);
+        painelOpcoes.add(checkboxLogDetalhado);
+
+        // Barra de Progresso
+        barraProgresso = new JProgressBar();
+        barraProgresso.setIndeterminate(true);
+        barraProgresso.setVisible(false);
+        barraProgresso.setStringPainted(true);
+        barraProgresso.setString("Importando...");
+
+        // Adiciona componentes ao painel central
+        painelCentral.add(scrollPane, BorderLayout.CENTER);
+        painelCentral.add(painelOpcoes, BorderLayout.NORTH);
+        painelCentral.add(barraProgresso, BorderLayout.SOUTH);
 
         // Painel Inferior - Botões
         JPanel painelBotoes = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         painelBotoes.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
 
-        JButton botaoImportar = new JButton("Importar");
+        botaoImportar = new JButton("Importar");
         botaoImportar.addActionListener(e -> importarArquivo());
+
+        JButton botaoLimparLog = new JButton("Limpar Log");
+        botaoLimparLog.addActionListener(e -> limparLog());
 
         JButton botaoFechar = new JButton("Fechar");
         botaoFechar.addActionListener(e -> dispose());
 
         painelBotoes.add(botaoImportar);
+        painelBotoes.add(botaoLimparLog);
         painelBotoes.add(botaoFechar);
 
         // Adiciona os componentes ao frame
         add(painelSelecao, BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
+        add(painelCentral, BorderLayout.CENTER);
         add(painelBotoes, BorderLayout.SOUTH);
 
         // Centraliza na tela
         setLocationRelativeTo(null);
+    }
+
+    private void adicionarInstrucoesLog() {
+        logArea.append("[" + getCurrentTime() + "] Instruções para importação de CSV:\n");
+        logArea.append("1. O arquivo CSV deve ter cabeçalho com os nomes das colunas.\n");
+        logArea.append("2. Colunas obrigatórias: 'titulo' e 'autores'.\n");
+        logArea.append("3. Colunas opcionais: 'isbn', 'editora', 'data_publicacao'.\n");
+        logArea.append("4. Se o ISBN já existir, o livro será atualizado se houver diferenças.\n");
+        logArea.append("5. Livros sem ISBN serão verificados por título e autor para evitar duplicações.\n");
+        logArea.append("6. ISBNs duplicados no arquivo: apenas o primeiro será processado.\n\n");
+        logArea.append("Exemplo de arquivo CSV:\n");
+        logArea.append("titulo,autores,isbn,editora,data_publicacao\n");
+        logArea.append("\"Vetores e Geometria Analitica\",\"Paulo Winterle\",\"9788574801711\",\"Pearson\",\"2009-03-01\"\n");
+        logArea.append("\"O Cortiço\",\"Aluísio Azevedo\",\"9788506055342\",\"Ática\",\"1890-01-01\"\n\n");
+        logArea.append("Selecione um arquivo CSV e clique em 'Importar'.\n\n");
+    }
+
+    private String getCurrentTime() {
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+        return sdf.format(new Date());
+    }
+
+    private void limparLog() {
+        logArea.setText("");
+        adicionarInstrucoesLog();
     }
 
     private void selecionarArquivo() {
@@ -98,6 +143,7 @@ public class Importacao extends JFrame {
         if (resultado == JFileChooser.APPROVE_OPTION) {
             File arquivo = fileChooser.getSelectedFile();
             campoArquivo.setText(arquivo.getAbsolutePath());
+            logArea.append("[" + getCurrentTime() + "] Arquivo selecionado: " + arquivo.getName() + "\n");
         }
     }
 
@@ -111,22 +157,23 @@ public class Importacao extends JFrame {
             return;
         }
 
-        // Desabilita botões durante importação
-        botaoSelecionar.setEnabled(false);
+        // Desabilita botões e mostra barra de progresso durante importação
+        setComponentesAtivos(false);
+        barraProgresso.setVisible(true);
 
         // Executa importação em thread separada para não travar a UI
         SwingWorker<ImportacaoResultado, String> worker = new SwingWorker<>() {
             @Override
             protected ImportacaoResultado doInBackground() throws Exception {
-                publish("Iniciando importação do arquivo: " + caminhoArquivo);
+                publish("[" + getCurrentTime() + "] Iniciando importação do arquivo: " + caminhoArquivo);
 
                 try {
                     return importacaoService.importarCSV(caminhoArquivo);
                 } catch (IOException e) {
-                    publish("Erro ao ler arquivo: " + e.getMessage());
+                    publish("[" + getCurrentTime() + "] Erro ao ler arquivo: " + e.getMessage());
                     throw e;
                 } catch (CsvValidationException e) {
-                    publish("Erro no formato do CSV: " + e.getMessage());
+                    publish("[" + getCurrentTime() + "] Erro no formato do CSV: " + e.getMessage());
                     throw e;
                 }
             }
@@ -135,32 +182,40 @@ public class Importacao extends JFrame {
             protected void process(java.util.List<String> chunks) {
                 for (String mensagem : chunks) {
                     logArea.append(mensagem + "\n");
+                    // Rola para a última linha
+                    logArea.setCaretPosition(logArea.getDocument().getLength());
                 }
             }
 
             @Override
             protected void done() {
-                botaoSelecionar.setEnabled(true);
+                barraProgresso.setVisible(false);
+                setComponentesAtivos(true);
 
                 try {
                     ImportacaoResultado resultado = get();
-                    logArea.append("\n" + resultado.toString() + "\n");
+                    logArea.append("\n[" + getCurrentTime() + "] " + resultado.toString() + "\n");
 
-                    // Mostra erros se houver
-                    if (resultado.erros > 0) {
+                    // Mostra erros se houver e o log detalhado estiver ativado
+                    if (resultado.erros > 0 && checkboxLogDetalhado.isSelected()) {
                         logArea.append("\nDetalhes dos erros:\n");
-                        for (String erro : resultado.mensagensErro) {
-                            logArea.append("- " + erro + "\n");
+                        int contador = 0;
+                        for (String erro : resultado.getMensagensErro()) {
+                            logArea.append((++contador) + ". " + erro + "\n");
                         }
                     }
 
-                    // Mostra avisos se houver
-                    if (resultado.avisos > 0) {
+                    // Mostra avisos se houver e o log detalhado estiver ativado
+                    if (resultado.avisos > 0 && checkboxLogDetalhado.isSelected()) {
                         logArea.append("\nAvisos:\n");
-                        for (String aviso : resultado.mensagensAviso) {
-                            logArea.append("- " + aviso + "\n");
+                        int contador = 0;
+                        for (String aviso : resultado.getMensagensAviso()) {
+                            logArea.append((++contador) + ". " + aviso + "\n");
                         }
                     }
+
+                    // Rola para a última linha
+                    logArea.setCaretPosition(logArea.getDocument().getLength());
 
                     // Notifica o frame principal para atualizar a listagem
                     if (framePai != null) {
@@ -168,16 +223,36 @@ public class Importacao extends JFrame {
                     }
 
                     // Exibe mensagem de conclusão
-                    String mensagem = String.format("Importação concluída! %d inseridos, %d atualizados",
-                            resultado.inseridos, resultado.atualizados);
-                    JOptionPane.showMessageDialog(Importacao.this, mensagem);
+                    String mensagem = String.format("Importação concluída!\n- %d livros inseridos\n- %d livros atualizados\n- %d livros ignorados\n- %d erros\n- %d avisos",
+                            resultado.inseridos, resultado.atualizados, resultado.ignorados, resultado.erros, resultado.avisos);
+
+                    String titulo = "Importação Concluída";
+                    int tipo = JOptionPane.INFORMATION_MESSAGE;
+
+                    // Se houver erros, muda o tipo da mensagem
+                    if (resultado.erros > 0) {
+                        titulo = "Importação Concluída com Erros";
+                        tipo = JOptionPane.WARNING_MESSAGE;
+                    }
+
+                    JOptionPane.showMessageDialog(Importacao.this, mensagem, titulo, tipo);
 
                 } catch (Exception e) {
-                    logArea.append("\nA importação falhou: " + e.getMessage() + "\n");
+                    logArea.append("\n[" + getCurrentTime() + "] A importação falhou: " + e.getMessage() + "\n");
+                    JOptionPane.showMessageDialog(Importacao.this,
+                            "A importação falhou: " + e.getMessage(),
+                            "Erro",
+                            JOptionPane.ERROR_MESSAGE);
                 }
             }
         };
 
         worker.execute();
+    }
+
+    private void setComponentesAtivos(boolean ativo) {
+        botaoSelecionar.setEnabled(ativo);
+        botaoImportar.setEnabled(ativo);
+        checkboxLogDetalhado.setEnabled(ativo);
     }
 }

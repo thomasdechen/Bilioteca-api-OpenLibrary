@@ -3,6 +3,7 @@ package biblioteca.ui;
 import biblioteca.model.Livro;
 import biblioteca.repository.LivroRepository;
 import biblioteca.service.OpenLibraryService;
+import biblioteca.util.FormatacaoDatas;
 import com.google.gson.JsonObject;
 
 import javax.swing.*;
@@ -30,7 +31,6 @@ public class BibliotecaApp extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // Painel de Busca
         JPanel painelBusca = new JPanel();
         campoBusca = new JComboBox<>(new String[]{"Título", "Autor", "ISBN"});
         campoPesquisa = new JTextField(20);
@@ -90,7 +90,8 @@ public class BibliotecaApp extends JFrame {
                     livro.getAutores(),
                     livro.getIsbn(),
                     livro.getEditora(),
-                    livro.getDataPublicacao()
+                    livro.getDataPublicacao() != null ?
+                            FormatacaoDatas.formatarParaExibicao(livro.getDataPublicacao()) : ""
             });
         }
     }

@@ -1,6 +1,7 @@
 package biblioteca.service;
 
 import biblioteca.model.Livro;
+import biblioteca.util.FormatacaoDatas;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -165,28 +166,44 @@ public class OpenLibraryService {
         }
     }
 
-    private static LocalDate parseData(String dataString) {
-        if (dataString == null || dataString.trim().isEmpty()) {
+    /**
+     * Converte uma string de data em um objeto {@code LocalDate}, aceitando diferentes formatos.
+     * <p>Suporta os seguintes formatos:</p>
+     * <ul>
+     *     <li>AAAA-MM-DD: data completa (ex: 2023-03-15)</li>
+     *     <li>AAAA-MM: ano e mês (ex: 2023-03)</li>
+     *     <li>AAAA: apenas o ano (ex: 2023)</li>
+     * </ul>
+     * Caso a string não corresponda a nenhum desses formatos, tenta interpretar utilizando
+     * o método {@code FormatacaoDatas.analisarEntradaUsuario}.
+     *
+     * @param textoData: String de data a ser convertida
+     * @return LocalDate: convertida ou null se inválida
+     */
+    private static LocalDate parseData(String textoData) {
+        if (textoData == null || textoData.trim().isEmpty()) {
             return null;
         }
 
         try {
-            if (dataString.matches("\\d{4}-\\d{2}-\\d{2}")) {
-                return LocalDate.parse(dataString.trim(), FULL_DATE_FORMATTER);
+            if (textoData.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                return LocalDate.parse(textoData.trim());  // LocalDate.parse() já usa ISO por padrão
             }
 
-            if (dataString.matches("\\d{4}-\\d{2}")) {
-                return LocalDate.parse(dataString.trim(), YEAR_MONTH_FORMATTER);
+            if (textoData.matches("\\d{4}-\\d{2}")) {
+                return LocalDate.parse(textoData.trim() + "-01");  // Adiciona dia 01
             }
 
-            if (dataString.matches("\\d{4}")) {
-                int year = Integer.parseInt(dataString.trim());
-                return LocalDate.of(year, 1, 1);
+            if (textoData.matches("\\d{4}")) {
+                int ano = Integer.parseInt(textoData.trim());
+                return LocalDate.of(ano, 1, 1);
             }
-        } catch (DateTimeParseException e) {
+
+            // Tenta usar o FormatadorData para outros formatos
+            return FormatacaoDatas.analisarEntradaUsuario(textoData);
+        } catch (Exception e) {
+            System.err.println("Erro ao converter data: " + textoData + " - " + e.getMessage());
             return null;
         }
-
-        return null;
     }
 }

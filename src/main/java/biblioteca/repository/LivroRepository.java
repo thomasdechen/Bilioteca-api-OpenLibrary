@@ -5,6 +5,7 @@ import biblioteca.model.Livro;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -46,8 +47,7 @@ public class LivroRepository {
     public Livro buscarPorIsbn(String isbn) {
         EntityManager em = emf.createEntityManager();
         try {
-            // Query to check for exact match or if ISBN is in livros_semelhantes
-            String jpql = "SELECT l FROM Livro l WHERE l.isbn = :isbn OR :isbn MEMBER OF l.livrosSemelhantes";
+            String jpql = "SELECT l FROM Livro l WHERE l.isbn = :isbn";
 
             List<Livro> resultados = em.createQuery(jpql, Livro.class)
                     .setParameter("isbn", isbn)
@@ -89,7 +89,10 @@ public class LivroRepository {
                     jpql += "LOWER(l.editora) LIKE LOWER(:valor)";
                     break;
                 default:
-                    throw new IllegalArgumentException("Campo de busca inválido: " + campo);
+                    // Evitar SQL Injection quando se constrói consultas JPQL
+                    if (!Arrays.asList("titulo", "autores", "isbn", "editora").contains(campo)) {
+                        throw new IllegalArgumentException("Campo de busca inválido: " + campo);
+                    }
             }
 
             // Para campos de texto (não ISBN), usar busca parcial

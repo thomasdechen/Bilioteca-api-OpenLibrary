@@ -6,6 +6,7 @@ import biblioteca.service.LivroService;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.util.Comparator;
 import java.util.List;
 
 public class ListagemLivro extends JFrame {
@@ -62,6 +63,8 @@ public class ListagemLivro extends JFrame {
     private void atualizarListagem() {
         modeloTabela.setRowCount(0);
         List<Livro> livros = livroService.listarTodos();
+
+        livros.sort(Comparator.comparing(Livro::getId));
 
         for (Livro livro : livros) {
             modeloTabela.addRow(new Object[]{

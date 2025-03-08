@@ -147,8 +147,6 @@ public class OpenLibraryService {
             String jsonData = response.readEntity(String.class);
             JsonObject parsedResponse = JsonParser.parseString(jsonData).getAsJsonObject();
 
-            System.out.println("Resposta da API: " + parsedResponse);
-
             if (parsedResponse.has("size")) {
                 JsonElement sizeElement = parsedResponse.get("size");
 

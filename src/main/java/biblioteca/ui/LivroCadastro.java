@@ -3,6 +3,7 @@ package biblioteca.ui;
 import biblioteca.model.Livro;
 import biblioteca.service.LivroService;
 import biblioteca.service.OpenLibraryService;
+import biblioteca.util.FormatacaoDatas;
 
 import javax.swing.*;
 import java.awt.*;
@@ -33,7 +34,6 @@ public class LivroCadastro extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new GridLayout(6, 2, 10, 10));
 
-        // Campos de entrada
         add(new JLabel("Título:"));
         campoTitulo = new JTextField(livro.getTitulo() != null ? livro.getTitulo() : "");
         add(campoTitulo);
@@ -50,15 +50,15 @@ public class LivroCadastro extends JFrame {
         campoEditora = new JTextField(livro.getEditora() != null ? livro.getEditora() : "");
         add(campoEditora);
 
-        add(new JLabel("Data Publicação (AAAA-MM-DD):"));
+        add(new JLabel("Data Publicação (DD/MM/AAAA ou AAAA):"));
         campoDataPublicacao = new JTextField(
                 livro.getDataPublicacao() != null
-                        ? livro.getDataPublicacao().toString()
+                        ? FormatacaoDatas.formatarParaExibicao(livro.getDataPublicacao())
                         : ""
         );
         add(campoDataPublicacao);
+        add(campoDataPublicacao);
 
-        // Botões
         JButton botaoBuscarIsbn = new JButton("Buscar por ISBN");
         botaoBuscarIsbn.addActionListener(e -> buscarPorIsbn());
         add(botaoBuscarIsbn);
@@ -98,9 +98,10 @@ public class LivroCadastro extends JFrame {
             // Converter data
             if (!campoDataPublicacao.getText().trim().isEmpty()) {
                 try {
-                    livro.setDataPublicacao(LocalDate.parse(campoDataPublicacao.getText()));
+                    livro.setDataPublicacao(FormatacaoDatas.analisarEntradaUsuario(campoDataPublicacao.getText()));
                 } catch (Exception e) {
-                    JOptionPane.showMessageDialog(this, "Data inválida. Use o formato AAAA-MM-DD");
+                    JOptionPane.showMessageDialog(this,
+                            "Data inválida. Use o formato DD/MM/AAAA ou apenas o ano (AAAA)");
                     return;
                 }
             }

@@ -30,8 +30,6 @@ public class ImportacaoService {
      *
      * @param caminhoArquivo caminho para o arquivo CSV
      * @return Uma lista com os resultados da importação
-     * @throws IOException se houver erro na leitura do arquivo
-     * @throws CsvValidationException se o formato do CSV for inválido
      */
     public ImportacaoResultado importarCSV(String caminhoArquivo) throws IOException, CsvValidationException {
         ImportacaoResultado resultado = new ImportacaoResultado();
@@ -42,7 +40,6 @@ public class ImportacaoService {
                 throw new IOException("Arquivo CSV vazio ou inválido");
             }
 
-            // Mapeia os índices das colunas
             MapaColunas colunas = mapearColunas(cabecalho);
 
             if (colunas.idxTitulo == -1 || colunas.idxAutores == -1) {
@@ -98,23 +95,19 @@ public class ImportacaoService {
                 numeroLinha++;
 
                 try {
-                    // Validação do número de campos
                     if (linha.length != numeroCamposEsperados) {
                         resultado.registrarErro("Linha " + numeroLinha + ": número incorreto de campos. Esperado: "
                                 + numeroCamposEsperados + ", Encontrado: " + linha.length);
                         continue;
                     }
 
-                    // Validação de campos obrigatórios
                     if (dadosObrigatoriosAusentes(linha, colunas)) {
                         resultado.registrarErro("Linha " + numeroLinha + ": faltam campos obrigatórios (título ou autores)");
                         continue;
                     }
 
-                    // Processamento do ISBN
                     String isbn = processarIsbn(linha, colunas.idxIsbn, numeroLinha, isbnLinhasMap, linhasSemIsbn);
 
-                    // Criação do objeto livro
                     Livro livro = criarLivro(linha, colunas, isbn, numeroLinha, resultado);
 
                     // Adiciona à lista de processamento
@@ -129,10 +122,8 @@ public class ImportacaoService {
             throw e;
         }
 
-        // Registra avisos de ISBN duplicados
         registrarAvisosIsbnDuplicados(isbnLinhasMap, resultado);
 
-        // Registra aviso para livros sem ISBN
         registrarAvisoLivrosSemIsbn(linhasSemIsbn, resultado);
 
         return livrosParaProcessar;
@@ -296,7 +287,6 @@ public class ImportacaoService {
      * Processa um livro sem ISBN.
      */
     private void processarLivroSemIsbn(Livro livro, int numeroLinha, ImportacaoResultado resultado) {
-        // Verifica se existe livro idêntico no banco
         Livro livroIdentico = verificarLivroIdentico(livro);
         if (livroIdentico != null) {
             resultado.registrarIgnorado();
@@ -315,7 +305,6 @@ public class ImportacaoService {
      */
     private void processarLivroExistente(Livro livroNovo, Livro livroExistente,
                                          int numeroLinha, ImportacaoResultado resultado) {
-        // Verifica se o livro é idêntico ao existente
         if (livrosIdenticos(livroExistente, livroNovo)) {
             resultado.registrarIgnorado();
             resultado.registrarAviso("Linha " + numeroLinha +
@@ -335,7 +324,6 @@ public class ImportacaoService {
                     "Os dados serão atualizados.");
         }
 
-        // Realiza a atualização
         atualizarLivroExistente(livroExistente, livroNovo);
         livroService.salvarLivro(livroExistente);
         resultado.registrarAtualizado();
@@ -355,13 +343,11 @@ public class ImportacaoService {
      * Verifica se dois livros são idênticos em todos os campos relevantes
      */
     private boolean livrosIdenticos(Livro livro1, Livro livro2) {
-        // Compara os campos básicos
         boolean titulosIguais = Objects.equals(livro1.getTitulo(), livro2.getTitulo());
         boolean autoresIguais = Objects.equals(livro1.getAutores(), livro2.getAutores());
         boolean editorasIguais = Objects.equals(livro1.getEditora(), livro2.getEditora());
         boolean isbnsIguais = Objects.equals(livro1.getIsbn(), livro2.getIsbn());
 
-        // Compara datas de publicação considerando que podem ser nulas
         boolean datasIguais = (livro1.getDataPublicacao() == null && livro2.getDataPublicacao() == null) ||
                 (livro1.getDataPublicacao() != null && livro2.getDataPublicacao() != null &&
                         livro1.getDataPublicacao().equals(livro2.getDataPublicacao()));
@@ -369,14 +355,9 @@ public class ImportacaoService {
         return titulosIguais && autoresIguais && editorasIguais && datasIguais && isbnsIguais;
     }
 
-    /**
-     * Verifica se existe um livro idêntico no banco de dados (usado para livros sem ISBN)
-     */
     private Livro verificarLivroIdentico(Livro livro) {
-        // Busca por título e autor, que são os campos mais importantes para identificar um livro
         List<Livro> candidatos = repository.buscarPorCampo("titulo", livro.getTitulo());
 
-        // Filtra apenas os que têm o mesmo autor
         for (Livro candidato : candidatos) {
             if (livrosIdenticos(candidato, livro)) {
                 return candidato;
@@ -386,9 +367,6 @@ public class ImportacaoService {
         return null;
     }
 
-    /**
-     * Encontra o índice da coluna no cabeçalho, considerando variações de nome.
-     */
     private int encontrarIndiceColuna(String[] cabecalho, String... possiveisNomes) {
         for (int i = 0; i < cabecalho.length; i++) {
             String nomeColuna = cabecalho[i].trim().toLowerCase();
@@ -401,9 +379,6 @@ public class ImportacaoService {
         return -1;
     }
 
-    /**
-     * Classe para armazenar os índices das colunas mapeadas
-     */
     private static class MapaColunas {
         public int idxTitulo = -1;
         public int idxAutores = -1;

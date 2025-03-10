@@ -191,6 +191,16 @@ public class LivroCadastro extends JFrame {
             }
         }
 
+        String editora = campoEditora.getText().trim();
+        if (PATTERN_APENAS_SIMBOLOS.matcher(editora).matches()) {
+            JOptionPane.showMessageDialog(this,
+                    "Editora do livro não pode conter apenas símbolos",
+                    "Erro de Validação",
+                    JOptionPane.ERROR_MESSAGE);
+            campoEditora.requestFocus();
+            return false;
+        }
+
         String dataStr = campoDataPublicacao.getText().trim();
         if (!dataStr.isEmpty()) {
             try {

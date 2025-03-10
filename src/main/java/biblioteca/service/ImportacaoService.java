@@ -106,7 +106,12 @@ public class ImportacaoService {
                         continue;
                     }
 
-                    String isbn = processarIsbn(linha, colunas.idxIsbn, numeroLinha, isbnLinhasMap, linhasSemIsbn);
+                    // Verifica se os campos contêm apenas símbolos
+                    if (camposInválidos(linha, colunas, numeroLinha, resultado)) {
+                        continue; // Pula esta linha se algum campo estiver inválido
+                    }
+
+                    String isbn = processarIsbn(linha, colunas.idxIsbn, numeroLinha, isbnLinhasMap, linhasSemIsbn, resultado);
 
                     Livro livro = criarLivro(linha, colunas, isbn, numeroLinha, resultado);
 
@@ -137,13 +142,20 @@ public class ImportacaoService {
                 linha[colunas.idxTitulo].trim().isEmpty() || linha[colunas.idxAutores].trim().isEmpty();
     }
 
-    /**
-     * Processa o ISBN e atualiza mapas de controle.
-     */
     private String processarIsbn(String[] linha, int idxIsbn, int numeroLinha,
-                                 Map<String, List<Integer>> isbnLinhasMap, List<Integer> linhasSemIsbn) {
+                                 Map<String, List<Integer>> isbnLinhasMap, List<Integer> linhasSemIsbn,
+                                 ImportacaoResultado resultado) {
         if (idxIsbn >= 0 && idxIsbn < linha.length && !linha[idxIsbn].trim().isEmpty()) {
             String isbn = linha[idxIsbn].trim();
+
+            // Validação do formato do ISBN
+            if (!isbnValido(isbn)) {
+                resultado.registrarErro("Linha " + numeroLinha +
+                        ": ISBN '" + isbn + "' inválido. ISBN deve ter 10 ou 13 dígitos.");
+                linhasSemIsbn.add(numeroLinha);
+                return null;
+            }
+
             isbnLinhasMap.computeIfAbsent(isbn, k -> new ArrayList<>()).add(numeroLinha);
             return isbn;
         } else {
@@ -216,7 +228,7 @@ public class ImportacaoService {
                     mensagem.append(", ");
                 }
             }
-            mensagem.append(". Cada livro será inserido como um novo registro.");
+            mensagem.append(". Cada livro será verificado para garantir que não exista um com mesmo título e autor.");
             resultado.registrarAviso(mensagem.toString());
         }
     }
@@ -244,20 +256,43 @@ public class ImportacaoService {
     private void processarLivros(List<LivroImportacao> livrosParaProcessar,
                                  Map<String, Livro> livrosExistentes, ImportacaoResultado resultado) {
         Set<String> isbnsProcessados = new HashSet<>();
+        Set<String> tituloAutorProcessados = new HashSet<>();
 
         for (LivroImportacao livroImportacao : livrosParaProcessar) {
             Livro livro = livroImportacao.livro;
             String isbn = livro.getIsbn();
             int numeroLinha = livroImportacao.numeroLinha;
+            String tituloAutorChave = livro.getTitulo() + "|" + livro.getAutores();
 
             try {
-                // Caso 1: Livro sem ISBN
-                if (isbn == null || isbn.isEmpty()) {
-                    processarLivroSemIsbn(livro, numeroLinha, resultado);
+                // Caso 1: Verificação de título e autor duplicados
+                if (tituloAutorProcessados.contains(tituloAutorChave)) {
+                    resultado.registrarIgnorado();
+                    resultado.registrarAviso("Linha " + numeroLinha +
+                            ": Livro com mesmo título e autor já foi processado anteriormente neste arquivo: '" +
+                            livro.getTitulo() + "' por '" + livro.getAutores() + "'. Registro ignorado.");
                     continue;
                 }
 
-                // Caso 2: ISBN já processado nesta importação - pula para evitar duplicação
+                // Caso 2: Verificar se já existe um livro com mesmo título e autor
+                Livro livroExistenteTituloAutor = verificarLivroPorTituloAutor(livro);
+                if (livroExistenteTituloAutor != null) {
+                    resultado.registrarIgnorado();
+                    resultado.registrarAviso("Linha " + numeroLinha +
+                            ": Já existe um livro com mesmo título e autor no banco de dados: '" +
+                            livro.getTitulo() + "' por '" + livro.getAutores() + "'. Registro ignorado.");
+                    continue;
+                }
+
+                // Caso 3: Livro sem ISBN
+                if (isbn == null || isbn.isEmpty()) {
+                    livroService.salvarLivro(livro);
+                    resultado.registrarInserido();
+                    tituloAutorProcessados.add(tituloAutorChave);
+                    continue;
+                }
+
+                // Caso 4: ISBN já processado nesta importação - pula para evitar duplicação
                 if (isbnsProcessados.contains(isbn)) {
                     resultado.registrarIgnorado();
                     resultado.registrarAviso("Linha " + numeroLinha +
@@ -267,12 +302,13 @@ public class ImportacaoService {
 
                 // Marca ISBN como processado
                 isbnsProcessados.add(isbn);
+                tituloAutorProcessados.add(tituloAutorChave);
 
-                // Caso 3: ISBN existe no banco de dados - potencial atualização
+                // Caso 5: ISBN existe no banco de dados - potencial atualização
                 if (livrosExistentes.containsKey(isbn)) {
                     processarLivroExistente(livro, livrosExistentes.get(isbn), numeroLinha, resultado);
                 }
-                // Caso 4: ISBN novo - inserção
+                // Caso 6: ISBN novo - inserção
                 else {
                     livroService.salvarLivro(livro);
                     resultado.registrarInserido();
@@ -283,18 +319,76 @@ public class ImportacaoService {
         }
     }
 
-    private void processarLivroSemIsbn(Livro livro, int numeroLinha, ImportacaoResultado resultado) {
-        Livro livroIdentico = verificarLivroIdentico(livro);
-        if (livroIdentico != null) {
-            resultado.registrarIgnorado();
-            resultado.registrarAviso("Linha " + numeroLinha +
-                    ": Livro idêntico já existe no banco: '" + livroIdentico.getTitulo() + "' por '" +
-                    livroIdentico.getAutores() + "'. Registro ignorado.");
-            return;
+    /**
+     * Verifica se já existe um livro com o mesmo título e autor no banco de dados.
+     */
+    private Livro verificarLivroPorTituloAutor(Livro livro) {
+        List<Livro> candidatos = repository.buscarPorCampo("titulo", livro.getTitulo());
+
+        for (Livro candidato : candidatos) {
+            if (tituloAutorIguais(candidato, livro)) {
+                return candidato;
+            }
         }
 
-        livroService.salvarLivro(livro);
-        resultado.registrarInserido();
+        return null;
+    }
+
+    private boolean tituloAutorIguais(Livro livro1, Livro livro2) {
+        return Objects.equals(livro1.getTitulo(), livro2.getTitulo()) &&
+                Objects.equals(livro1.getAutores(), livro2.getAutores());
+    }
+
+    private boolean isbnValido(String isbn) {
+        if (isbn == null || isbn.trim().isEmpty()) {
+            return false;
+        }
+
+        String isbnLimpo = isbn.replaceAll("[-\\s]", "");
+
+        return isbnLimpo.length() == 10 || isbnLimpo.length() == 13;
+    }
+
+    private boolean contemApenasSímbolos(String texto) {
+        if (texto == null || texto.trim().isEmpty()) {
+            return true;
+        }
+        // Verifica se o texto NÃO contém nenhuma letra ou número
+        return !texto.trim().matches(".*[a-zA-Z0-9].*");
+    }
+
+    /**
+     * Checar se campos titulo, autores e editora estão invalidos
+     * Por exemplo: titulo somente composto por símbolos
+     */
+    private boolean camposInválidos(String[] linha, MapaColunas colunas, int numeroLinha, ImportacaoResultado resultado) {
+        boolean inválido = false;
+
+        if (colunas.idxTitulo >= 0 && colunas.idxTitulo < linha.length) {
+            String titulo = linha[colunas.idxTitulo].trim();
+            if (contemApenasSímbolos(titulo)) {
+                resultado.registrarErro("Linha " + numeroLinha + ": Título inválido. Não pode conter apenas símbolos: '" + titulo + "'");
+                inválido = true;
+            }
+        }
+
+        if (colunas.idxAutores >= 0 && colunas.idxAutores < linha.length) {
+            String autores = linha[colunas.idxAutores].trim();
+            if (contemApenasSímbolos(autores)) {
+                resultado.registrarErro("Linha " + numeroLinha + ": Autor inválido. Não pode conter apenas símbolos: '" + autores + "'");
+                inválido = true;
+            }
+        }
+
+        if (colunas.idxEditora >= 0 && colunas.idxEditora < linha.length && !linha[colunas.idxEditora].trim().isEmpty()) {
+            String editora = linha[colunas.idxEditora].trim();
+            if (contemApenasSímbolos(editora)) {
+                resultado.registrarErro("Linha " + numeroLinha + ": Editora inválida. Não pode conter apenas símbolos: '" + editora + "'");
+                inválido = true;
+            }
+        }
+
+        return inválido;
     }
 
     private void processarLivroExistente(Livro livroNovo, Livro livroExistente,
@@ -311,6 +405,18 @@ public class ImportacaoService {
         boolean autoresDiferentes = !livroExistente.getAutores().equals(livroNovo.getAutores());
 
         if (titulosDiferentes || autoresDiferentes) {
+            // Verifica se a combinação título/autor já existe em outro livro
+            Livro existenteComMesmoTituloAutor = verificarLivroPorTituloAutor(livroNovo);
+            if (existenteComMesmoTituloAutor != null &&
+                    !Objects.equals(existenteComMesmoTituloAutor.getIsbn(), livroNovo.getIsbn())) {
+                resultado.registrarIgnorado();
+                resultado.registrarAviso("Linha " + numeroLinha +
+                        ": A atualização causaria duplicação de título e autor com livro existente. " +
+                        "Título: '" + livroNovo.getTitulo() + "', Autor: '" + livroNovo.getAutores() + "'. " +
+                        "Registro ignorado.");
+                return;
+            }
+
             resultado.registrarAviso("Linha " + numeroLinha +
                     ": O livro com ISBN '" + livroNovo.getIsbn() + "' tem título/autor diferente do existente no banco. " +
                     "Existente: '" + livroExistente.getTitulo() + "' por '" + livroExistente.getAutores() + "'. " +
@@ -344,18 +450,6 @@ public class ImportacaoService {
                         livro1.getDataPublicacao().equals(livro2.getDataPublicacao()));
 
         return titulosIguais && autoresIguais && editorasIguais && datasIguais && isbnsIguais;
-    }
-
-    private Livro verificarLivroIdentico(Livro livro) {
-        List<Livro> candidatos = repository.buscarPorCampo("titulo", livro.getTitulo());
-
-        for (Livro candidato : candidatos) {
-            if (livrosIdenticos(candidato, livro)) {
-                return candidato;
-            }
-        }
-
-        return null;
     }
 
     private int encontrarIndiceColuna(String[] cabecalho, String... possiveisNomes) {

@@ -91,10 +91,19 @@ public class OpenLibraryService {
             }
         }
 
-        // Consulta assíncrona para buscar edições
+        /**
+         * Busca do número de edições para um livro a partir do ISBN.
+         *
+         * O processo segue a seguinte lógica:
+         * 1. Realiza uma consulta à API OpenLibrary com o ISBN do livro para obter os dados básicos (feito anteriormente)
+         * 2. Extrai o work_id(works/key) (identificador do livro) da resposta JSON inicial(resposta do endpoint de ISBN)
+         * 3. Utiliza o work_id para fazer uma segunda consulta à API de edições:
+         *    https://openlibrary.org/works/[work_id]/editions.json
+         * 4. Obtém e retorna o número de edições associadas a esta obra("size": [nº de edições])
+         */
         CompletableFuture<Integer> edicoesFuture = CompletableFuture.supplyAsync(() -> {
             try {
-                // Consulta para obter work_id
+                // Consulta para obter work_id(works/key)
                 Response response = CLIENT.target("https://openlibrary.org/isbn/" + isbn + ".json")
                         .request(MediaType.APPLICATION_JSON)
                         .get();
@@ -123,10 +132,8 @@ public class OpenLibraryService {
             }
         }, EXECUTOR);
 
-        // Define um valor padrão (0) para o número de edições,
-        // mas limita o tempo de espera para evitar bloqueios longos
         try {
-            int edicoes = edicoesFuture.get(2, TimeUnit.SECONDS);
+            int edicoes = edicoesFuture.get(3, TimeUnit.SECONDS);
             livro.setLivrosSemelhantes(edicoes);
         } catch (Exception e) {
             System.err.println("Tempo esgotado ao buscar edições: " + e.getMessage());
@@ -207,7 +214,6 @@ public class OpenLibraryService {
                 }
             }
 
-            // Tenta usar abreviações de meses em inglês (Oct 1, 1988)
             try {
                 java.time.format.DateTimeFormatter formatter =
                         java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy", java.util.Locale.ENGLISH);
@@ -215,7 +221,6 @@ public class OpenLibraryService {
             } catch (Exception e) {
             }
 
-            // Tenta usar nomes de meses completos em inglês (October 1, 1988)
             try {
                 java.time.format.DateTimeFormatter formatter =
                         java.time.format.DateTimeFormatter.ofPattern("MMMM d, yyyy", java.util.Locale.ENGLISH);
@@ -223,7 +228,6 @@ public class OpenLibraryService {
             } catch (Exception e) {
             }
 
-            // Tenta formatos adicionais
             try {
                 java.time.format.DateTimeFormatter formatter =
                         java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.ENGLISH);

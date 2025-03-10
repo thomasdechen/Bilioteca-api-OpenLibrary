@@ -13,15 +13,7 @@ public class LivroService {
         this.repository = new LivroRepository();
     }
 
-    /**
-     * Salva um livro no banco de dados, verificando se já existe
-     * um livro com o mesmo título e autor
-     *
-     * @param livro o livro a ser salvo
-     * @throws RuntimeException se já existir um livro com o mesmo título e autor
-     */
     public void salvarLivro(Livro livro) throws RuntimeException {
-        // A validação agora é feita diretamente no repository
         repository.salvar(livro);
     }
 

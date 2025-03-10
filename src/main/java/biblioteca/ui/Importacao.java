@@ -37,7 +37,6 @@ public class Importacao extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
 
-        // Painel Superior - Seleção de arquivo
         JPanel painelSelecao = new JPanel(new BorderLayout(5, 0));
         painelSelecao.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -52,7 +51,6 @@ public class Importacao extends JFrame {
         painelSelecao.add(campoArquivo, BorderLayout.CENTER);
         painelSelecao.add(botaoSelecionar, BorderLayout.EAST);
 
-        // Painel Central - Log e Opções
         JPanel painelCentral = new JPanel(new BorderLayout(10, 10));
         painelCentral.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
 
@@ -66,19 +64,16 @@ public class Importacao extends JFrame {
 
         JScrollPane scrollPane = new JScrollPane(logArea);
 
-        // Painel de Opções
         JPanel painelOpcoes = new JPanel(new FlowLayout(FlowLayout.LEFT));
         checkboxLogDetalhado = new JCheckBox("Log detalhado", true);
         painelOpcoes.add(checkboxLogDetalhado);
 
-        // Barra de Progresso
         barraProgresso = new JProgressBar();
         barraProgresso.setIndeterminate(true);
         barraProgresso.setVisible(false);
         barraProgresso.setStringPainted(true);
         barraProgresso.setString("Importando...");
 
-        // Adiciona componentes ao painel central
         painelCentral.add(scrollPane, BorderLayout.CENTER);
         painelCentral.add(painelOpcoes, BorderLayout.NORTH);
         painelCentral.add(barraProgresso, BorderLayout.SOUTH);
@@ -100,12 +95,10 @@ public class Importacao extends JFrame {
         painelBotoes.add(botaoLimparLog);
         painelBotoes.add(botaoFechar);
 
-        // Adiciona os componentes ao frame
         add(painelSelecao, BorderLayout.NORTH);
         add(painelCentral, BorderLayout.CENTER);
         add(painelBotoes, BorderLayout.SOUTH);
 
-        // Centraliza na tela
         setLocationRelativeTo(null);
     }
 
@@ -147,6 +140,21 @@ public class Importacao extends JFrame {
         }
     }
 
+
+    /**
+     * Importa dados do arquivo CSV escolhido pelo usuário.
+     *
+     * Usa SwingWorker que é como uma thread especial para o Swing. Isso faz com que
+     * a importação rode em segundo plano, assim o usuário pode ver o progresso na
+     * tela sem que a aplicação fique travada.
+     *
+     * O que acontece durante a importação:
+     * - Desabilita os botões da tela
+     * - Mostra a barra de progresso
+     * - Vai adicionando mensagens no log para o usuário acompanhar(necessário muitos dados para ver o processo)
+     * - No final, mostra quantos livros foram importados, atualizados/ignorados ou se deu erro
+     */
+
     private void importarArquivo() {
         String caminhoArquivo = campoArquivo.getText();
         if (caminhoArquivo.isEmpty()) {
@@ -182,7 +190,6 @@ public class Importacao extends JFrame {
             protected void process(java.util.List<String> chunks) {
                 for (String mensagem : chunks) {
                     logArea.append(mensagem + "\n");
-                    // Rola para a última linha
                     logArea.setCaretPosition(logArea.getDocument().getLength());
                 }
             }
@@ -196,7 +203,6 @@ public class Importacao extends JFrame {
                     ImportacaoResultado resultado = get();
                     logArea.append("\n[" + getCurrentTime() + "] " + resultado.toString() + "\n");
 
-                    // Mostra erros se houver e o log detalhado estiver ativado
                     if (resultado.erros > 0 && checkboxLogDetalhado.isSelected()) {
                         logArea.append("\nDetalhes dos erros:\n");
                         int contador = 0;
@@ -205,7 +211,6 @@ public class Importacao extends JFrame {
                         }
                     }
 
-                    // Mostra avisos se houver e o log detalhado estiver ativado
                     if (resultado.avisos > 0 && checkboxLogDetalhado.isSelected()) {
                         logArea.append("\nAvisos:\n");
                         int contador = 0;
@@ -214,22 +219,18 @@ public class Importacao extends JFrame {
                         }
                     }
 
-                    // Rola para a última linha
                     logArea.setCaretPosition(logArea.getDocument().getLength());
 
-                    // Notifica o frame principal para atualizar a listagem
                     if (framePai != null) {
                         framePai.notificarMudanca();
                     }
 
-                    // Exibe mensagem de conclusão
                     String mensagem = String.format("Importação concluída!\n- %d livros inseridos\n- %d livros atualizados\n- %d livros ignorados\n- %d erros\n- %d avisos",
                             resultado.inseridos, resultado.atualizados, resultado.ignorados, resultado.erros, resultado.avisos);
 
                     String titulo = "Importação Concluída";
                     int tipo = JOptionPane.INFORMATION_MESSAGE;
 
-                    // Se houver erros, muda o tipo da mensagem
                     if (resultado.erros > 0) {
                         titulo = "Importação Concluída com Erros";
                         tipo = JOptionPane.WARNING_MESSAGE;

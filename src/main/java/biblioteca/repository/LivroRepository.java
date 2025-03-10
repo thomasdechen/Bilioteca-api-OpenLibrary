@@ -58,8 +58,11 @@ public class LivroRepository {
         }
     }
 
+    /**
+     * Salva um livro no banco de dados, verificando se já existe
+     * um livro com o mesmo título e autor
+     */
     public void salvar(Livro livro) throws RuntimeException {
-        // Verifica se já existe um livro com mesmo título e autor
         if (livroJaExiste(livro)) {
             throw new RuntimeException("Já existe um livro cadastrado com o mesmo título e autor.");
         }

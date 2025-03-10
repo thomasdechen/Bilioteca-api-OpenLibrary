@@ -13,6 +13,9 @@ import java.awt.*;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Interface gráfica principal
+ */
 public class BibliotecaApp extends JFrame {
     private LivroRepository repository;
     private JTable tabelaLivros;
@@ -116,8 +119,6 @@ public class BibliotecaApp extends JFrame {
     }
 
     private void mostrarDialogoProgresso() {
-        // Usando Timer para exibir o diálogo após um pequeno delay
-        // evitando que ele apareça e desapareça rapidamente
         Timer timer = new Timer(200, e -> {
             if (!dialogoProgresso.isVisible()) {
                 dialogoProgresso.setVisible(true);
@@ -133,7 +134,6 @@ public class BibliotecaApp extends JFrame {
 
     private void abrirTelaImportacao() {
         Importacao telaImportacao = new Importacao(this);
-        // Centralizar a janela de importação na tela
         telaImportacao.setLocationRelativeTo(this);
         telaImportacao.setVisible(true);
     }
@@ -167,7 +167,6 @@ public class BibliotecaApp extends JFrame {
             return;
         }
 
-        // Mapear o campo selecionado na interface para o nome da propriedade no repositório
         String campoRepositorio;
         switch (campo) {
             case "Título":
@@ -203,7 +202,6 @@ public class BibliotecaApp extends JFrame {
             return;
         }
 
-        // Adicionar livros encontrados à tabela
         for (Livro livro : livros) {
             modeloTabela.addRow(new Object[]{
                     livro.getId(),
@@ -218,6 +216,12 @@ public class BibliotecaApp extends JFrame {
         }
     }
 
+    /**
+     * Nesta funcionalidade foi utilizado Thread por estar puxando dados de uma API externa,
+     * sendo assim, essa requisição pode demorar em alguns momentos, por instabilidade do servidor.
+     * Utilizando o Thread, o usuário pode continuar mexendo na aplicação, pois o Swing por padrão roda em
+     * um único thread.
+     */
     private void cadastrarPorIsbn() {
         String isbn = campoIsbn.getText().trim();
         if (isbn.isEmpty()) {
@@ -302,10 +306,8 @@ public class BibliotecaApp extends JFrame {
     private void abrirCadastroLivro(Livro livro) {
         // Verificar se já existe uma janela de cadastro aberta
         if (cadastroAtivo != null && cadastroAtivo.isVisible()) {
-            // Trazer a janela já aberta para frente
             cadastroAtivo.toFront();
             cadastroAtivo.requestFocus();
-            // Opcional: mostrar uma mensagem
             JOptionPane.showMessageDialog(this,
                     "Uma janela de edição já está aberta. Finalize-a antes de abrir outra.",
                     "Aviso",
@@ -313,13 +315,10 @@ public class BibliotecaApp extends JFrame {
             return;
         }
 
-        // Se não houver janela aberta, criar uma nova
         cadastroAtivo = new LivroCadastro(this, livro);
 
-        // Centralizar a janela de cadastro em relação à janela principal
         cadastroAtivo.setLocationRelativeTo(this);
 
-        // Adicionar um listener para atualizar a referência quando a janela for fechada
         cadastroAtivo.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosed(java.awt.event.WindowEvent windowEvent) {
@@ -375,7 +374,7 @@ public class BibliotecaApp extends JFrame {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try {
                     LivroRepository.closeEntityManagerFactory();
-                    OpenLibraryService.encerrarRecursos(); // Adicionado para encerrar recursos do OpenLibraryService
+                    OpenLibraryService.encerrarRecursos();
                 } catch (Exception e) {
                     System.err.println("Erro ao fechar recursos: " + e.getMessage());
                 }

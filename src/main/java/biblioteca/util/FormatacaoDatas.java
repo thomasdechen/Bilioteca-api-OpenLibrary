@@ -4,11 +4,12 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 public class FormatacaoDatas {
-    private static final DateTimeFormatter FORMATADOR_BRASILEIRO = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter FORMATO_BRASILEIRO = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     /**
      * Formata a data para o padrão brasileiro.
      * Caso o livro tenha apenas o ano de publicação, exibe somente o ano na interface.
+     * Obs: No banco de dados, o padrão será sempre o ISO.
      */
 
     public static String formatarParaExibicao(LocalDate data) {
@@ -20,7 +21,7 @@ public class FormatacaoDatas {
             return String.valueOf(data.getYear());
         }
 
-        return data.format(FORMATADOR_BRASILEIRO);
+        return data.format(FORMATO_BRASILEIRO);
     }
 
     /**
@@ -41,7 +42,7 @@ public class FormatacaoDatas {
 
         // Se estiver no formato brasileiro (dd/MM/yyyy)
         if (textoData.matches("\\d{1,2}/\\d{1,2}/\\d{4}")) {
-            return LocalDate.parse(textoData, FORMATADOR_BRASILEIRO);
+            return LocalDate.parse(textoData, FORMATO_BRASILEIRO);
         }
 
         // Se estiver no formato ISO (yyyy-MM-dd)
@@ -49,6 +50,6 @@ public class FormatacaoDatas {
             return LocalDate.parse(textoData);
         }
 
-        throw new IllegalArgumentException("Formato de data inválido. Use DD/MM/AAAA ou AAAA.");
+        throw new IllegalArgumentException("Formato de data inválido. Use DD/MM/AAAA, AAAA/MM/DD ou AAAA.");
     }
 }

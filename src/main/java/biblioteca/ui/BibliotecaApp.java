@@ -2,6 +2,7 @@ package biblioteca.ui;
 
 import biblioteca.model.Livro;
 import biblioteca.repository.LivroRepository;
+import biblioteca.service.LivroService;
 import biblioteca.service.OpenLibraryService;
 import biblioteca.util.FormatacaoDatas;
 import com.google.gson.JsonObject;
@@ -9,7 +10,6 @@ import com.google.gson.JsonObject;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 
@@ -19,11 +19,19 @@ public class BibliotecaApp extends JFrame {
     private JTextField campoIsbn, campoPesquisa;
     private JComboBox<String> campoBusca;
     private DefaultTableModel modeloTabela;
+    private JDialog dialogoProgresso;
+    private JProgressBar barraProgresso;
+
+    // Variável para controlar se há uma janela de cadastro aberta
+    private LivroCadastro cadastroAtivo = null;
 
     public BibliotecaApp() {
         repository = new LivroRepository();
         initComponents();
+        inicializarDialogoProgresso();
         carregarLivros();
+
+        setLocationRelativeTo(null);
     }
 
     private void initComponents() {
@@ -33,7 +41,7 @@ public class BibliotecaApp extends JFrame {
         setLayout(new BorderLayout());
 
         JPanel painelBusca = new JPanel();
-        campoBusca = new JComboBox<>(new String[]{"Título", "Autor", "ISBN"});
+        campoBusca = new JComboBox<>(new String[]{"Título", "Autor", "ISBN", "Editora", "Data Publicação"});
         campoPesquisa = new JTextField(20);
         JButton botaoBuscar = new JButton("Buscar");
         botaoBuscar.addActionListener(e -> buscarLivros());
@@ -46,7 +54,6 @@ public class BibliotecaApp extends JFrame {
         painelBusca.add(botaoBuscar);
         painelBusca.add(botaoMostrarTodos);
 
-        // Painel de Cadastro ISBN
         JPanel painelCadastro = new JPanel();
         campoIsbn = new JTextField(15);
         JButton botaoCadastrarIsbn = new JButton("Cadastrar por ISBN");
@@ -61,7 +68,6 @@ public class BibliotecaApp extends JFrame {
         JButton botaoExcluir = new JButton("Excluir");
         botaoExcluir.addActionListener(e -> excluirLivroSelecionado());
 
-        // Novo botão de importação
         JButton botaoImportar = new JButton("Importar CSV");
         botaoImportar.addActionListener(e -> abrirTelaImportacao());
 
@@ -71,10 +77,10 @@ public class BibliotecaApp extends JFrame {
         painelCadastro.add(botaoIncluir);
         painelCadastro.add(botaoEditar);
         painelCadastro.add(botaoExcluir);
-        painelCadastro.add(botaoImportar); // Adiciona o botão de importação
+        painelCadastro.add(botaoImportar);
 
         // Tabela de Livros
-        String[] colunas = {"ID", "Título", "Autor", "ISBN", "Editora", "Data Publicação", "Livros Semelhantes"};
+        String[] colunas = {"ID", "Título", "Autor", "ISBN", "Editora", "Data Publicação", "Livros Semelhantes(edições)"};
         modeloTabela = new DefaultTableModel(colunas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -89,8 +95,46 @@ public class BibliotecaApp extends JFrame {
         add(painelCadastro, BorderLayout.SOUTH);
     }
 
+    private void inicializarDialogoProgresso() {
+        dialogoProgresso = new JDialog(this, "Carregando...", true);
+        dialogoProgresso.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        dialogoProgresso.setSize(300, 100);
+        dialogoProgresso.setLayout(new BorderLayout());
+        dialogoProgresso.setLocationRelativeTo(this);
+
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        JLabel mensagem = new JLabel("Buscando informações do livro...");
+        panel.add(mensagem, BorderLayout.NORTH);
+
+        barraProgresso = new JProgressBar();
+        barraProgresso.setIndeterminate(true);
+        panel.add(barraProgresso, BorderLayout.CENTER);
+
+        dialogoProgresso.add(panel);
+    }
+
+    private void mostrarDialogoProgresso() {
+        // Usando Timer para exibir o diálogo após um pequeno delay
+        // evitando que ele apareça e desapareça rapidamente
+        Timer timer = new Timer(200, e -> {
+            if (!dialogoProgresso.isVisible()) {
+                dialogoProgresso.setVisible(true);
+            }
+        });
+        timer.setRepeats(false);
+        timer.start();
+    }
+
+    private void esconderDialogoProgresso() {
+        dialogoProgresso.setVisible(false);
+    }
+
     private void abrirTelaImportacao() {
         Importacao telaImportacao = new Importacao(this);
+        // Centralizar a janela de importação na tela
+        telaImportacao.setLocationRelativeTo(this);
         telaImportacao.setVisible(true);
     }
 
@@ -123,10 +167,28 @@ public class BibliotecaApp extends JFrame {
             return;
         }
 
-        String campoRepositorio = campo.equals("Título") ? "titulo" :
-                campo.equals("Autor") ? "autores" :
-                        campo.equals("Editora") ? "editora" :
-                                "isbn";
+        // Mapear o campo selecionado na interface para o nome da propriedade no repositório
+        String campoRepositorio;
+        switch (campo) {
+            case "Título":
+                campoRepositorio = "titulo";
+                break;
+            case "Autor":
+                campoRepositorio = "autores";
+                break;
+            case "ISBN":
+                campoRepositorio = "isbn";
+                break;
+            case "Editora":
+                campoRepositorio = "editora";
+                break;
+            case "Data Publicação":
+                campoRepositorio = "dataPublicacao";
+                break;
+            default:
+                campoRepositorio = "titulo";
+                break;
+        }
 
         List<Livro> livros = repository.buscarPorCampo(campoRepositorio, valor);
 
@@ -163,24 +225,109 @@ public class BibliotecaApp extends JFrame {
             return;
         }
 
-        try {
-            JsonObject dadosLivro = OpenLibraryService.buscarInformacoesPorIsbn(isbn);
-            Livro livro = OpenLibraryService.converterParaLivro(dadosLivro, isbn);
-            repository.salvar(livro);
-            carregarLivros();
-            JOptionPane.showMessageDialog(this, "Livro cadastrado com sucesso!");
-            campoIsbn.setText("");
-        } catch (RuntimeException e) {
+        LivroService livroService = new LivroService();
+        if (livroService.buscarPorIsbn(isbn) != null) {
             JOptionPane.showMessageDialog(this,
-                    "Erro ao buscar informações do livro: " + e.getMessage(),
-                    "Erro",
-                    JOptionPane.ERROR_MESSAGE);
+                    "Este ISBN já está cadastrado no sistema.",
+                    "ISBN Duplicado",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
         }
+
+        mostrarDialogoProgresso();
+
+        new Thread(() -> {
+            try {
+                JsonObject dadosLivro = OpenLibraryService.buscarInformacoesPorIsbn(isbn);
+                Livro livro = OpenLibraryService.converterParaLivro(dadosLivro, isbn);
+
+                if (livroService.buscarPorIsbn(isbn) != null) {
+                    SwingUtilities.invokeLater(() -> {
+                        esconderDialogoProgresso();
+                        JOptionPane.showMessageDialog(BibliotecaApp.this,
+                                "Este ISBN já foi cadastrado por outro usuário.",
+                                "ISBN Duplicado",
+                                JOptionPane.WARNING_MESSAGE);
+                    });
+                    return;
+                }
+
+                try {
+                    livroService.salvarLivro(livro);
+
+                    SwingUtilities.invokeLater(() -> {
+                        esconderDialogoProgresso();
+                        carregarLivros();
+                        JOptionPane.showMessageDialog(BibliotecaApp.this, "Livro cadastrado com sucesso!");
+                        campoIsbn.setText("");
+                    });
+                } catch (RuntimeException e) {
+                    SwingUtilities.invokeLater(() -> {
+                        esconderDialogoProgresso();
+                        if (e.getMessage() != null && e.getMessage().contains("ISBN já existe")) {
+                            JOptionPane.showMessageDialog(BibliotecaApp.this,
+                                    "Este ISBN já está cadastrado no sistema.",
+                                    "ISBN Duplicado",
+                                    JOptionPane.WARNING_MESSAGE);
+                        } else {
+                            JOptionPane.showMessageDialog(BibliotecaApp.this,
+                                    "Erro ao salvar o livro: " + e.getMessage(),
+                                    "Erro",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                SwingUtilities.invokeLater(() -> {
+                    esconderDialogoProgresso();
+
+                    String mensagem;
+                    if (e.getMessage() == null || e.getMessage().isEmpty()) {
+                        mensagem = "Erro desconhecido ao buscar informações do livro.";
+                    } else if (e.getMessage().contains("not found") || e.getMessage().contains("não encontrado")) {
+                        mensagem = "Não foi possível encontrar um livro com este ISBN.";
+                    } else {
+                        mensagem = "Erro ao buscar informações do livro: " + e.getMessage();
+                    }
+
+                    JOptionPane.showMessageDialog(BibliotecaApp.this,
+                            mensagem,
+                            "Erro",
+                            JOptionPane.ERROR_MESSAGE);
+                });
+            }
+        }).start();
     }
 
     private void abrirCadastroLivro(Livro livro) {
-        LivroCadastro cadastroFrame = new LivroCadastro(this, livro);
-        cadastroFrame.setVisible(true);
+        // Verificar se já existe uma janela de cadastro aberta
+        if (cadastroAtivo != null && cadastroAtivo.isVisible()) {
+            // Trazer a janela já aberta para frente
+            cadastroAtivo.toFront();
+            cadastroAtivo.requestFocus();
+            // Opcional: mostrar uma mensagem
+            JOptionPane.showMessageDialog(this,
+                    "Uma janela de edição já está aberta. Finalize-a antes de abrir outra.",
+                    "Aviso",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // Se não houver janela aberta, criar uma nova
+        cadastroAtivo = new LivroCadastro(this, livro);
+
+        // Centralizar a janela de cadastro em relação à janela principal
+        cadastroAtivo.setLocationRelativeTo(this);
+
+        // Adicionar um listener para atualizar a referência quando a janela for fechada
+        cadastroAtivo.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent windowEvent) {
+                cadastroAtivo = null;
+            }
+        });
+
+        cadastroAtivo.setVisible(true);
     }
 
     private void editarLivroSelecionado() {
@@ -228,8 +375,9 @@ public class BibliotecaApp extends JFrame {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try {
                     LivroRepository.closeEntityManagerFactory();
+                    OpenLibraryService.encerrarRecursos(); // Adicionado para encerrar recursos do OpenLibraryService
                 } catch (Exception e) {
-                    System.err.println("Erro ao fechar EntityManagerFactory: " + e.getMessage());
+                    System.err.println("Erro ao fechar recursos: " + e.getMessage());
                 }
             }));
         });

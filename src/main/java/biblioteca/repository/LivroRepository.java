@@ -5,6 +5,9 @@ import biblioteca.model.Livro;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -21,7 +24,46 @@ public class LivroRepository {
         }
     }
 
-    public void salvar(Livro livro) {
+    /**
+     * Verifica se já existe um livro com o mesmo título e autor
+     * @param livro O livro a ser verificado
+     * @return True se já existir, False caso contrário
+     */
+    public boolean livroJaExiste(Livro livro) {
+        EntityManager em = emf.createEntityManager();
+        try {
+            String jpql = "SELECT COUNT(l) FROM Livro l WHERE " +
+                    "LOWER(l.titulo) = LOWER(:titulo) AND " +
+                    "LOWER(l.autores) = LOWER(:autores)";
+
+            if (livro.getId() != null) {
+                jpql += " AND l.id != :id";
+            }
+
+            javax.persistence.Query query = em.createQuery(jpql);
+            query.setParameter("titulo", livro.getTitulo().toLowerCase());
+            query.setParameter("autores", livro.getAutores().toLowerCase());
+
+            if (livro.getId() != null) {
+                query.setParameter("id", livro.getId());
+            }
+
+            Long count = (Long) query.getSingleResult();
+            return count > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            em.close();
+        }
+    }
+
+    public void salvar(Livro livro) throws RuntimeException {
+        // Verifica se já existe um livro com mesmo título e autor
+        if (livroJaExiste(livro)) {
+            throw new RuntimeException("Já existe um livro cadastrado com o mesmo título e autor.");
+        }
+
         EntityManager em = emf.createEntityManager();
         try {
             em.getTransaction().begin();
@@ -44,9 +86,16 @@ public class LivroRepository {
     }
 
 
+    /**
+     * Funções para cada tipo de busca na barra de pesquisa.
+     */
     public Livro buscarPorIsbn(String isbn) {
         EntityManager em = emf.createEntityManager();
         try {
+            if (isbn == null || isbn.isEmpty()) {
+                return null;
+            }
+
             String jpql = "SELECT l FROM Livro l WHERE l.isbn = :isbn";
 
             List<Livro> resultados = em.createQuery(jpql, Livro.class)
@@ -75,6 +124,11 @@ public class LivroRepository {
         EntityManager em = emf.createEntityManager();
         try {
             String jpql = "SELECT l FROM Livro l WHERE ";
+
+            if ("dataPublicacao".equals(campo)) {
+                return buscarPorData(valor);
+            }
+
             switch (campo) {
                 case "titulo":
                     jpql += "LOWER(l.titulo) LIKE LOWER(:valor)";
@@ -89,8 +143,7 @@ public class LivroRepository {
                     jpql += "LOWER(l.editora) LIKE LOWER(:valor)";
                     break;
                 default:
-                    // Evitar SQL Injection quando se constrói consultas JPQL
-                    if (!Arrays.asList("titulo", "autores", "isbn", "editora").contains(campo)) {
+                    if (!Arrays.asList("titulo", "autores", "isbn", "editora", "dataPublicacao").contains(campo)) {
                         throw new IllegalArgumentException("Campo de busca inválido: " + campo);
                     }
             }
@@ -108,6 +161,56 @@ public class LivroRepository {
         } catch (Exception e) {
             e.printStackTrace();
             return Collections.emptyList();
+        } finally {
+            em.close();
+        }
+    }
+
+    public List<Livro> buscarPorData(String dataString) {
+        EntityManager em = emf.createEntityManager();
+        try {
+            LocalDate data = null;
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+            try {
+                data = LocalDate.parse(dataString, formatter);
+            } catch (DateTimeParseException e) {
+                try {
+                    data = LocalDate.parse(dataString);
+                } catch (DateTimeParseException ex) {
+                    try {
+                        int ano = Integer.parseInt(dataString);
+                        return buscarPorAno(ano);
+                    } catch (NumberFormatException nex) {
+                        // Se tudo falhar, faz busca parcial na string da data
+                        String jpql = "SELECT l FROM Livro l WHERE CAST(l.dataPublicacao AS string) LIKE :valor";
+                        return em.createQuery(jpql, Livro.class)
+                                .setParameter("valor", "%" + dataString + "%")
+                                .getResultList();
+                    }
+                }
+            }
+
+            String jpql = "SELECT l FROM Livro l WHERE l.dataPublicacao = :data";
+            return em.createQuery(jpql, Livro.class)
+                    .setParameter("data", data)
+                    .getResultList();
+        } finally {
+            em.close();
+        }
+    }
+
+    public List<Livro> buscarPorAno(int ano) {
+        EntityManager em = emf.createEntityManager();
+        try {
+            LocalDate inicioAno = LocalDate.of(ano, 1, 1);
+            LocalDate fimAno = LocalDate.of(ano, 12, 31);
+
+            String jpql = "SELECT l FROM Livro l WHERE l.dataPublicacao BETWEEN :inicio AND :fim";
+            return em.createQuery(jpql, Livro.class)
+                    .setParameter("inicio", inicioAno)
+                    .setParameter("fim", fimAno)
+                    .getResultList();
         } finally {
             em.close();
         }

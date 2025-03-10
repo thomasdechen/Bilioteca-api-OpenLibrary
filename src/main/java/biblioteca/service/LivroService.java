@@ -1,11 +1,10 @@
 package biblioteca.service;
 
+
 import biblioteca.model.Livro;
 import biblioteca.repository.LivroRepository;
 
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class LivroService {
     private LivroRepository repository;
@@ -14,30 +13,15 @@ public class LivroService {
         this.repository = new LivroRepository();
     }
 
-    public void salvarLivro(Livro livro) {
-        // Normalizar ISBN: remover espaços em branco e converter string vazia para null
-        String isbn = livro.getIsbn() != null ? livro.getIsbn().trim() : null;
-        livro.setIsbn(isbn);
-
-        if (isbn != null && !isbn.isEmpty()) {
-            // Verificar se já existe um livro com este ISBN ou ISBN semelhante
-            Livro livroExistente = repository.buscarPorIsbn(isbn);
-
-            if (livroExistente != null) {
-                if (livro.getId() == null || !livro.getId().equals(livroExistente.getId())) {
-                    throw new RuntimeException("Livro com este ISBN já existe: " + isbn);
-                }
-            }
-        }
-
-        if (livro.getTitulo() == null || livro.getTitulo().trim().isEmpty()) {
-            throw new IllegalArgumentException("Título do livro é obrigatório");
-        }
-
-        if (livro.getAutores() == null || livro.getAutores().trim().isEmpty()) {
-            throw new IllegalArgumentException("Autores do livro são obrigatórios");
-        }
-
+    /**
+     * Salva um livro no banco de dados, verificando se já existe
+     * um livro com o mesmo título e autor
+     *
+     * @param livro o livro a ser salvo
+     * @throws RuntimeException se já existir um livro com o mesmo título e autor
+     */
+    public void salvarLivro(Livro livro) throws RuntimeException {
+        // A validação agora é feita diretamente no repository
         repository.salvar(livro);
     }
 
@@ -50,19 +34,11 @@ public class LivroService {
     }
 
     public List<Livro> buscarPorCampo(String campo, String valor) {
-        // Busca pelos critérios no repositório e depois ordena por ID
-        List<Livro> livros = repository.buscarPorCampo(campo, valor);
-        return livros.stream()
-                .sorted(Comparator.comparing(Livro::getId))
-                .collect(Collectors.toList());
+        return repository.buscarPorCampo(campo, valor);
     }
 
     public List<Livro> listarTodos() {
-        // Obtém todos os livros e garante que estejam ordenados por ID
-        List<Livro> livros = repository.listarTodos();
-        return livros.stream()
-                .sorted(Comparator.comparing(Livro::getId))
-                .collect(Collectors.toList());
+        return repository.listarTodos();
     }
 
     public void excluir(Long id) {

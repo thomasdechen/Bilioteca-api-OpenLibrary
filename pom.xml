@@ -50,14 +50,6 @@
             <version>5.5.2</version>
         </dependency>
 
-        <!-- JUnit 5 -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-
         <!-- JAX-RS -->
         <dependency>
             <groupId>javax.ws.rs</groupId>

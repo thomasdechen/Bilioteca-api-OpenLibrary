@@ -2,8 +2,6 @@ package biblioteca.model;
 
 import javax.persistence.*;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Objects;
 
 @Entity
 @Table(name = "livros")
@@ -21,7 +19,7 @@ public class Livro {
     @Column(name = "data_publicacao")
     private LocalDate dataPublicacao;
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true)
     private String isbn;
 
     @Column

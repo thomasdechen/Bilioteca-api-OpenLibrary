@@ -4,12 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4254a6d7-a86c-4a65-8f1a-33129caacba1" name="Changes" comment="1- Correção de bugs no cadastro de livros&#10;2- Finalizado função de livros semelhante(edição)&#10;3- Corrigido bugs na interface&#10;4- Melhorado verificações, no cadastro manual e por ISBN.">
+    <list default="true" id="4254a6d7-a86c-4a65-8f1a-33129caacba1" name="Changes" comment="1- Documentação quase finalizada">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/biblioteca/repository/LivroRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/biblioteca/repository/LivroRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/biblioteca/repository/TesteConexaoBancoPostgreSQL.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/biblioteca/repository/TesteConexaoBancoPostgreSQL.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/biblioteca/service/LivroService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/biblioteca/service/LivroService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/biblioteca/service/ImportacaoService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/biblioteca/service/ImportacaoService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/biblioteca/service/OpenLibraryService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/biblioteca/service/OpenLibraryService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/biblioteca/ui/BibliotecaApp.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/biblioteca/ui/BibliotecaApp.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/biblioteca/ui/Importacao.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/biblioteca/ui/Importacao.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/biblioteca/ui/ListagemLivro.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/biblioteca/ui/LivroCadastro.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/biblioteca/ui/LivroCadastro.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -120,7 +122,14 @@
       <option name="project" value="LOCAL" />
       <updated>1741566077430</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="1- Documentação quase finalizada">
+      <created>1741606690886</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1741606690886</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -141,7 +150,8 @@
     <MESSAGE value="Implementado função de importação de csv. Melhoria dos logs de importação.&#10;&#10;Obs: Ainda falta ajustes." />
     <MESSAGE value="Melhorias nos logs e código da função de importação de arquivo de texto CSV." />
     <MESSAGE value="1- Correção de bugs no cadastro de livros&#10;2- Finalizado função de livros semelhante(edição)&#10;3- Corrigido bugs na interface&#10;4- Melhorado verificações, no cadastro manual e por ISBN." />
-    <option name="LAST_COMMIT_MESSAGE" value="1- Correção de bugs no cadastro de livros&#10;2- Finalizado função de livros semelhante(edição)&#10;3- Corrigido bugs na interface&#10;4- Melhorado verificações, no cadastro manual e por ISBN." />
+    <MESSAGE value="1- Documentação quase finalizada" />
+    <option name="LAST_COMMIT_MESSAGE" value="1- Documentação quase finalizada" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

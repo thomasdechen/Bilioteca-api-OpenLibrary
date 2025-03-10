@@ -10,6 +10,9 @@ import java.awt.*;
 import java.time.LocalDate;
 import java.util.regex.Pattern;
 
+/**
+ * Interface gráfica para cadastro de livros
+ */
 public class LivroCadastro extends JFrame {
     private LivroService livroService;
     private Livro livro;
@@ -119,7 +122,6 @@ public class LivroCadastro extends JFrame {
     }
 
     private boolean validarCampos() {
-        // Validar título
         String titulo = campoTitulo.getText().trim();
         if (titulo.isEmpty()) {
             JOptionPane.showMessageDialog(this,
@@ -148,7 +150,6 @@ public class LivroCadastro extends JFrame {
             return false;
         }
 
-        // Validar autores
         String autores = campoAutores.getText().trim();
         if (autores.isEmpty()) {
             JOptionPane.showMessageDialog(this,
@@ -177,7 +178,6 @@ public class LivroCadastro extends JFrame {
             return false;
         }
 
-        // Validar ISBN
         String isbn = campoIsbn.getText().trim();
         if (!isbn.isEmpty()) {
             isbn = isbn.replace("-", "").replace(" ", "");
@@ -191,7 +191,6 @@ public class LivroCadastro extends JFrame {
             }
         }
 
-        // Validar data
         String dataStr = campoDataPublicacao.getText().trim();
         if (!dataStr.isEmpty()) {
             try {
@@ -230,7 +229,6 @@ public class LivroCadastro extends JFrame {
     }
 
     private void salvarLivro() {
-        // Validar campos antes de prosseguir
         if (!validarCampos()) {
             return;
         }
@@ -240,7 +238,7 @@ public class LivroCadastro extends JFrame {
             livro.setTitulo(campoTitulo.getText().trim());
             livro.setAutores(campoAutores.getText().trim());
 
-            // Normalizar ISBN
+            // Limpar/normalizar ISBN
             String isbn = campoIsbn.getText().trim();
             if (!isbn.isEmpty()) {
                 isbn = isbn.replace("-", "").replace(" ", "");
@@ -275,13 +273,11 @@ public class LivroCadastro extends JFrame {
                 dispose();
             } catch (RuntimeException e) {
                 if (e.getMessage().contains("mesmo título e autor")) {
-                    // Mensagem específica para o caso de duplicação de título e autor
                     JOptionPane.showMessageDialog(this,
                             "Não é permitido cadastrar livros com o mesmo título e autor.",
                             "Erro de Validação",
                             JOptionPane.ERROR_MESSAGE);
                 } else {
-                    // Outras exceções
                     JOptionPane.showMessageDialog(this,
                             "Erro ao salvar: " + e.getMessage(),
                             "Erro",

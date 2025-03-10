@@ -18,9 +18,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+
+/**
+ * Service de conexão com a API OpenLibrary e tratamento de dados recebidos.
+ */
 public class OpenLibraryService {
     private static final String BASE_URL = "https://openlibrary.org/api/books?bibkeys=ISBN:";
-    // Cliente HTTP reutilizável
     private static final Client CLIENT = ClientBuilder.newClient();
     // Executor para processamento assíncrono
     private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(4);

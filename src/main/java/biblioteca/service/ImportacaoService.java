@@ -283,9 +283,6 @@ public class ImportacaoService {
         }
     }
 
-    /**
-     * Processa um livro sem ISBN.
-     */
     private void processarLivroSemIsbn(Livro livro, int numeroLinha, ImportacaoResultado resultado) {
         Livro livroIdentico = verificarLivroIdentico(livro);
         if (livroIdentico != null) {
@@ -300,9 +297,6 @@ public class ImportacaoService {
         resultado.registrarInserido();
     }
 
-    /**
-     * Processa um livro com ISBN que já existe no banco.
-     */
     private void processarLivroExistente(Livro livroNovo, Livro livroExistente,
                                          int numeroLinha, ImportacaoResultado resultado) {
         if (livrosIdenticos(livroExistente, livroNovo)) {
@@ -329,9 +323,6 @@ public class ImportacaoService {
         resultado.registrarAtualizado();
     }
 
-    /**
-     * Atualiza os dados de um livro existente com base em um novo.
-     */
     private void atualizarLivroExistente(Livro existente, Livro novo) {
         existente.setTitulo(novo.getTitulo());
         existente.setAutores(novo.getAutores());
@@ -400,9 +391,6 @@ public class ImportacaoService {
         }
     }
 
-    /**
-     * Classe para armazenar os resultados da importação
-     */
     public static class ImportacaoResultado {
         public int inseridos = 0;
         public int atualizados = 0;

@@ -9,4 +9,5 @@ Usuário e senha
 
 
 Execute a classe TesteConexaoBancoPostgreSQL para verificar a conexão com o banco.
+
 Rode o BibliotecaApp para iniciar o sistema.

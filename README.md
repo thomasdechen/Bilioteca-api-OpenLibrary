@@ -4,7 +4,7 @@
 
 Configure a conexão com o banco de dados PostgreSQL no arquivo persistence.xml:
 
-URL de conexão
+URL de conexão,
 Usuário e senha
 
 
